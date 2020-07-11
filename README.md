@@ -52,7 +52,7 @@ Polygonの代表点を計算し、その代表点と最近傍の等高線頂点�
 ## 参考にした資料
 ### データ
 * 国土地理院 地理院地図Vector https://maps.gsi.go.jp/vector/
-* 国土地理院 標高タイル
+* 国土地理院 標高タイル https://maps.gsi.go.jp/development/hyokochi.html
 
 ### 利用ライブラリ
 * deck.gl https://deck.gl/
