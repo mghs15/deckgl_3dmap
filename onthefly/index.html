@@ -107,9 +107,9 @@ map.on('load', function(){
 var action = function(){
     
     //データの読み込みと加工
-    var contour = getGeojson("LineString", "contour", "gsibv-vectortile-source-1-4-16").contests3d;
-    var road = getGeojson("LineString", "road", "gsibv-vectortile-source-1-4-16").contests3d;
-    var railway = getGeojson("LineString", "railway", "gsibv-vectortile-source-1-4-16").contests3d;
+    var contour = getGeojson("LineString", "contour", "gsibv-vectortile-source-1-4-16").contents3d;
+    var road = getGeojson("LineString", "road", "gsibv-vectortile-source-1-4-16").contents3d;
+    var railway = getGeojson("LineString", "railway", "gsibv-vectortile-source-1-4-16").contents3d;
     var building = getGeojson("Polygon", "building", "gsibv-vectortile-source-1-4-16").geojson;
 //    var waterarea = getGeojson("Polygon", "waterarea", "gsibv-vectortile-source-1-4-16").geojson;
     
@@ -151,11 +151,11 @@ var action = function(){
         
         var ftCode = f.properties["ftCode"];
         if(ftCode == 3101 || ftCode == 3111 || ftCode == 4302){
-          height = height + 20;
+          height = height + 10;
         }else if(ftCode == 3102 || ftCode == 3112){
-          height = height + 50;
+          height = height + 40;
         }else if(ftCode == 3103 || ftCode == 4301){
-          height = height + 50;
+          height = height + 100;
         }
         
         building.features[i].properties["height"] = height;
@@ -239,11 +239,16 @@ var action = function(){
       id: 'path-layer-railway',
       data: railway,
       pickable: true,
-      widthScale: 3,
-//      widthMinPixels: 2,
+      widthScale: 1,
+      widthMinPixels: 2,
       getPath: d => d.path,
-      getColor: d => [0,255,255],
-      getWidth: d => 2
+      getColor: d => [
+        0,
+        (!d.properties.staCode || d.properties.staCode == 0) ? 255 : 100,
+        255,
+        (d.properties.railState == 100 || d.properties.railState == 300 || d.properties.railState == 2 || d.properties.railState == 3) ? 50 : 255
+      ],
+      getWidth: d => (!d.properties.staCode || d.properties.staCode == 0) ? 2 : 4
     });
     
     

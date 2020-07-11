@@ -101,7 +101,7 @@ var getGeojson = function(geomtype, source_layer, source){
             
             var f = features[j];
             
-            if(f.geometry.type != "LineString"){
+            if(f.geometry.type != "LineString" || !f.geometry.coordinates){
                 continue;
             }
             
@@ -139,7 +139,7 @@ var getGeojson = function(geomtype, source_layer, source){
     var results = {
       "geom-type": geomtype,
       "source-layer": source_layer,
-      "contests3d": all_features3d,
+      "contents3d": all_features3d,
       "geojson": geojson
     };
     
