@@ -119,13 +119,18 @@ var action = function(){
 
         var f = road[i];
         
-        var color = [255,255,255];
+        var roadOpacity = 255;
+        if(f.properties["ftCode"] == 2704 || f.properties["ftCode"] == 2714 || f.properties["ftCode"] == 2724 || f.properties["ftCode"] == 2734  || f.properties["ftCode"] == 52702 || f.properties["ftCode"] == 52704 ){
+          roadOpacity = 100;
+        }
+        
+        var color = [255,255,255,roadOpacity];
         if(f.properties["motorway"] == 1){
-          color = [100,195,115];
+          color = [100,195,115,roadOpacity];
         }else if (f.properties["rdCtg"] == 0 || f.properties["rdCtg"] == 3){
-          color = [235,130,120];
+          color = [235,130,120,roadOpacity];
         }else if (f.properties["rdCtg"] == 1){
-          color = [255,255,100];
+          color = [255,255,100,roadOpacity];
         }
         
         var width = 1;
@@ -283,7 +288,7 @@ var action = function(){
 var isTerrainShow = false;
 
 var addTerrain = function(){
-    if(isTerrainShow){
+    if(!isTerrainShow){
       //地形
       if(map.getLayer('terrain-layer')){
         map.removeLayer('terrain-layer');
@@ -298,7 +303,7 @@ var addTerrain = function(){
           offset: 0
         },
         elevationData: 'https://cyberjapandata.gsi.go.jp/xyz/dem_png/{z}/{x}/{y}.png',
-        color: [100,100,100]
+        color: [100,155,100]
       });    
       map.addLayer(myTerrainDeckLayer);
     }else{
