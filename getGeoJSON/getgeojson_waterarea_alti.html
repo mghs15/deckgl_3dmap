@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset='utf-8' />
+<title>Railway Map</title>
+<meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
+<script src='https://api.tiles.mapbox.com/mapbox-gl-js/v1.8.1/mapbox-gl.js'></script>
+<link href='https://api.tiles.mapbox.com/mapbox-gl-js/v1.8.1/mapbox-gl.css' rel='stylesheet' />
+
+<script type="text/javascript" src="https://maps.gsi.go.jp/js.lib/leaflet-1.2.0/leaflet.js"></script>
+<script type="text/javascript" src="https://maps.gsi.go.jp/js.lib/jquery/jquery-1.11.1.min.js"></script>
+<script src='https://unpkg.com/@turf/turf/turf.min.js'></script>
+
+<style>
+body { margin:0; padding:0; }
+#map {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 100%;
+}
+#menu {
+    position: absolute;
+    left:  0.5em;
+    top: 0.5em; 
+    padding: 0.2em 0.5em;
+    margin: 0 0;
+    background: #eeeeee;
+    box-shadow: 0px 0px 0px 5px #eeeeee;
+    border: dashed 3px #dddddd;
+    font-family: 'Open Sans', sans-serif;
+    max-height: 90%;
+    overflow: auto;
+}
+div.colorselect {
+  margin: 5px 0px 5px 0px;
+
+}
+button.local {
+  display: block;
+  text-align:center;
+  background: #dddddd;
+  padding 0 0.5em 0 0.5em;
+  border: solid 2px #ddd;
+  border-radius: 3px;
+  margin: 0px 0px 5px 0px;
+  line-height: 1.5em;
+  font-size: 1em;
+  width: 100%;
+}
+#download {
+  display: block;
+  text-align:center;
+  background: #dddddd;
+  padding 0 0.5em 0 0.5em;
+  border: solid 2px #ddd;
+  border-radius: 3px;
+  margin: 0px 0px 5px 0px;
+  line-height: 1.5em;
+  font-size: 1em;
+  width: 100%;
+}
+#download2 {
+  display: block;
+  text-align:center;
+  background: #dddddd;
+  padding 0 0.5em 0 0.5em;
+  border: solid 2px #ddd;
+  border-radius: 3px;
+  margin: 0px 0px 5px 0px;
+  line-height: 1.5em;
+  font-size: 1em;
+  width: 100%;
+}
+
+
+</style>
+</head>
+<body>
+
+
+<div id='map'></div>
+<div id='menu'>
+  <button type="button" class="local" name="colchange" onclick="action()" >実行</button>
+  <div><a id="download">ダウンロード</a></div>
+  <div><a id="download2">ダウンロード（3D）</a></div>
+</div>
+
+<script>
+
+/*************************************************/
+/*Mapbox 関係設定                                */
+/*************************************************/
+var map = new mapboxgl.Map({
+  container: 'map', // container id
+  hash: true, //add #position on URL
+  style: './style.json', // stylesheet location
+  center: [140.091293, 36.204537], // starting position [lng, lat]
+  zoom: 15, // starting zoom
+  maxZoom: 17.99,
+  localIdeographFontFamily: ['MS Gothic', 'Hiragino Kaku Gothic Pro', 'sans-serif']
+});
+
+
+map.addControl(new mapboxgl.NavigationControl(), 'bottom-right');
+map.addControl(new mapboxgl.ScaleControl() );
+
+map.showTileBoundaries = true;
+
+/*************************************************/
+/*ダウンロード用データの設定                     */
+/*************************************************/
+
+/*
+var gsi_tile_json = {
+  "tilejson": "2.2.0",
+  "tiles": ["https://cyberjapandata.gsi.go.jp/xyz/experimental_bvmap/{z}/{x}/{y}.pbf"],
+  "name": "gsimaps_vector",
+  "id": "gsimaps_vector",
+  "format": "pbf",
+  "attribution": "<a href=\"https://github.com/gsi-cyberjapan/gsimaps-vector-experiment\">地理院地図Vector（仮称）提供実験</a>",
+  "maxzoom": 17,
+  "minzoom": 4,
+  "bounds": [-180, -85.0511, 180, 85.0511],
+  "center": [139.770832,35.689835,14],
+  "vector_layers": [
+//基本、Lineと立方体表示で事足りるPolygonを残す
+//    {"id": "symbol", "description": "symbol"},
+//    {"id": "boundary", "description": "boundary"},
+//    {"id": "road", "description": "road"},
+//    {"id": "railway", "description": "railway"},
+//    {"id": "searoute", "description": "searoute"},
+//    {"id": "coastline", "description": "coastline"},
+//    {"id": "river", "description": "river"},
+//    {"id": "lake", "description": "lake"},
+    {"id": "waterarea", "description": "waterarea"},
+//    {"id": "elevation", "description": "elevation"},
+//    {"id": "transp", "description": "transp"},
+    {"id": "contour", "description": "contour" },
+//    {"id": "landforma", "description": "landforma"},
+//    {"id": "structurea", "description": "structurea"},
+//    {"id": "wstructurea", "description": "wstructurea"},
+//    {"id": "building", "description": "building"},
+//    {"id": "transl", "description": "transl"},
+//    {"id": "structurel", "description": "structurel"},
+//    {"id": "landformp", "description": "landformp"},
+//    {"id": "landforml", "description": "landforml"},
+//    {"id": "label", "description": "label"}
+  ]
+};
+*/
+
+//最初にロードしたスタイルをベースに解析を行う。
+var getGeojson = function(){
+  /* スタイルの確認 */
+  var styleLoadStatus = map.isStyleLoaded();
+  if(styleLoadStatus){
+  
+    var all_features = [];
+    var all_features3d = [];
+    
+        
+        
+        var features = map.querySourceFeatures("gsibv-vectortile-source-1-4-16", {
+           sourceLayer: "waterarea"
+        });
+        
+        
+        var contour = map.querySourceFeatures("gsibv-vectortile-source-1-4-16", {
+           sourceLayer: "contour"
+        });
+        
+        console.log(contour);
+        
+        //contourデータをすべてポイントにして処理する。
+        var collection = turf.featureCollection(contour);
+        var contourPoints = turf.explode(collection);
+        
+        var feature3d = [];
+        
+        var pow2_8 = Math.pow(2, 8);
+        var pow2_16 = Math.pow(2, 16);
+        var pow2_23 = Math.pow(2, 23);
+        var pow2_24 = Math.pow(2, 24);
+        
+        
+        for(j in features){
+            
+            var f = features[j];
+            
+            if(f.geometry.type != "Polygon"){
+                continue;
+            }
+            
+            var targetPoint = turf.centerOfMass(f);
+                
+            var nearestPoint = turf.nearestPoint(targetPoint, contourPoints);
+            
+            
+            var ftCode = f.properties["ftCode"];
+            
+            
+            feature3d.push({
+              "polygon": f.geometry.coordinates,
+              "properties":{
+                "sourceLayer": "waterarea",
+                "ftCode": f.properties["ftCode"],
+                "alti": nearestPoint.properties["alti"],
+                "baseHeight": nearestPoint.properties["alti"] - 10
+              }
+            });
+            
+        }
+        
+        all_features = all_features.concat(features);
+        all_features3d = all_features3d.concat(feature3d);
+      
+    
+
+    
+    var geojson = {
+      "type": "FeatureCollection",
+      "features": all_features
+    };
+    
+    
+    //ダウンロード準備
+    var results_string = JSON.stringify(geojson, null, 4);
+    var results_string2 = JSON.stringify(all_features3d, null, 4);
+    setdownload(results_string, "output.geojson", 'download'); //ダウンロード準備
+    setdownload(results_string2, "output3d_waterarea.json", 'download2'); //ダウンロード準備
+    console.log("解析完了");
+    
+  }else{
+    alert("まだ地図のスタイルを読み込めていません！");
+  }
+}
+
+
+/*************************************************/
+/*ダウンロードの処理                               */
+/*************************************************/
+
+var setdownload = function(string, filename, container){
+      var blob = new Blob([string], {type: 'text\/plain'});
+      var url = URL.createObjectURL(blob);
+      const a = document.getElementById(container);
+      a.href = window.URL.createObjectURL(blob);
+      a.download = filename;
+}
+
+
+/*************************************************/
+/*ボタンごとの処理                               */
+/*************************************************/
+//通常
+var action = function(){
+  getGeojson(null, true);
+}
+
+</script>
+
+
+</script>
+ 
+</body>
+</html>

@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset='utf-8' />
+<title>Map</title>
+<meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
+<script src="https://unpkg.com/deck.gl@latest/dist.min.js"></script>
+<script src='https://api.tiles.mapbox.com/mapbox-gl-js/v1.8.1/mapbox-gl.js'></script>
+<link href='https://api.tiles.mapbox.com/mapbox-gl-js/v1.8.1/mapbox-gl.css' rel='stylesheet' />
+<style>
+body { margin:0; padding:0; }
+#map {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 100%;
+}
+#menu {
+    position: absolute;
+    left:  0.5em;
+    top: 0.5em; 
+    padding: 0.2em 0.5em;
+    margin: 0 0;
+    background: #eeeeee;
+    box-shadow: 0px 0px 0px 5px #eeeeee;
+    border: dashed 3px #dddddd;
+    font-family: 'Open Sans', sans-serif;
+    width: 90%;
+    height: 75px;
+    max-width: 150px;
+}
+button.local {
+    position: relative;
+    left:  0.5em;
+    top: 0.5em; 
+    padding: 0em 0em;
+    margin: 0.2em 0.5em;
+    background: #ffdddd;
+    font-family: 'Open Sans', sans-serif;
+}
+
+</style>
+</head>
+<body>
+
+
+<div id='map'></div>
+
+<script>
+
+/*************************************************/
+/*JSON読み込み                                   */
+/*************************************************/
+
+var loadJSON = function(path){
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', path, false);
+  xhr.send(null);
+  var data = JSON.parse(xhr.responseText);
+  return data;
+}
+
+/*************************************************/
+/*DATA                                           */
+/*************************************************/
+
+//
+
+//contour
+var contour = loadJSON("./data/contour.json");
+
+//railway
+var railway = loadJSON("./data/railway.json");
+
+//road
+var road = loadJSON("./data/road.json");
+
+for(i in road){
+
+    var f = road[i];
+    
+    var color = [255,255,255];
+    if(f.properties["motorway"] == 1){
+      color = [100,195,115];
+    }else if (f.properties["rdCtg"] == 0 || f.properties["rdCtg"] == 3){
+      color = [235,130,120];
+    }else if (f.properties["rdCtg"] == 1){
+      color = [255,255,100];
+    }
+    
+    var width = 1;
+    if(f.properties["rnkWidth"] < 5){
+      width = 1 + f.properties["rnkWidth"];
+    }
+    
+    road[i].properties["color"] = color;
+    road[i].properties["width"] = width;
+    
+    for(j in road[i].path){
+      road[i].path[j][2] = road[i].path[j][2] + 5; //見た目の関係で少し高くする。
+    }
+    
+
+}
+
+//building
+var building = loadJSON("./data/building.json");
+
+
+//waterarea
+var waterarea = loadJSON("./data/waterarea.json");
+
+
+/*************************************************/
+/*DeckGL 関係設定                                */
+/*************************************************/
+new deck.DeckGL({
+  container: 'map',
+  mapboxApiAccessToken: '<your_token_here>',
+  mapStyle: './style.json',
+  initialViewState: {
+    longitude: 136.669482,
+    latitude: 35.906362,
+    zoom: 15,
+    pitch: 60
+  },
+  controller: true,
+  layers: [
+    //道路
+    new deck.PathLayer({
+      id: 'path-layer-road',
+      data: road,
+      pickable: true,
+      widthScale: 3,
+//      widthMinPixels: 2,
+      getPath: d => d.path,
+      getColor: d => d.properties["color"],
+      getWidth: d => d.properties["width"]
+    }),
+    //鉄道
+    new deck.PathLayer({
+      id: 'path-layer-railway',
+      data: railway,
+      pickable: true,
+      widthScale: 3,
+//      widthMinPixels: 2,
+      getPath: d => d.path,
+      getColor: d => [0,255,255],
+      getWidth: d => 2
+    }),
+    //建物
+    new deck.PolygonLayer({
+      id: 'polygon-layer-waterarea',
+      data: building,
+      pickable: true,
+      stroked: true,
+      filled: true,
+      extruded: true,
+      wireframe: true,
+      lineWidthMinPixels: 1,
+      getPolygon: d => d.polygon,
+      getElevation: d => d.properties.height,
+      getFillColor: d => [255, 200, 200],
+      getLineColor: [80, 80, 80],
+      getLineWidth: 1
+    }),
+    //建物（地下部を隠す）
+    new deck.PolygonLayer({
+      id: 'polygon-layer-building',
+      data: building,
+      pickable: true,
+      stroked: true,
+      filled: true,
+      extruded: true,
+      wireframe: true,
+      lineWidthMinPixels: 1,
+      getPolygon: d => d.polygon,
+      getElevation: d => d.properties.baseHeight,
+      getFillColor: d => [50, 50, 50],
+      getLineColor: [80, 80, 80],
+      getLineWidth: 1
+    }),
+    //水域
+    new deck.PolygonLayer({
+      id: 'polygon-layer-waterarea',
+      data: waterarea,
+      pickable: true,
+      stroked: true,
+      filled: true,
+      extruded: true,
+      wireframe: true,
+      lineWidthMinPixels: 1,
+      getPolygon: d => d.polygon,
+      getElevation: d => d.properties.alti,
+      getFillColor: d => [190,210,255],
+      getLineColor: [255, 255, 255],
+      getLineWidth: 1
+    }),
+    //水域（地下部を隠す）
+    new deck.PolygonLayer({
+      id: 'polygon-layer-waterarea',
+      data: waterarea,
+      pickable: true,
+      stroked: true,
+      filled: true,
+      extruded: true,
+      wireframe: true,
+      lineWidthMinPixels: 1,
+      getPolygon: d => d.polygon,
+      getElevation: d => d.properties.baseHeight,
+      getFillColor: d => [50, 50, 50],
+      getLineColor: [80, 80, 80],
+      getLineWidth: 1
+    }),
+    //等高線
+    new deck.PathLayer({
+      id: 'path-layer-contour',
+      data: contour,
+      pickable: true,
+      widthScale: 1,
+      widthMinPixels: 1,
+      getPath: d => d.path,
+      getColor: d => [200,160,60],
+      getWidth: d => 1
+    })/*,
+    new deck.TerrainLayer({
+      elevationDecoder: {
+        rScaler: Math.pow(2,16)*0.01,
+        gScaler: Math.pow(2,8)*0.01,
+        bScaler: 0.01,
+        offset: 0
+      },
+      elevationData: 'https://cyberjapandata.gsi.go.jp/xyz/dem_png/{z}/{x}/{y}.png'
+    })
+    */
+  ]
+});
+
+</script>
+ 
+</body>
+</html>
