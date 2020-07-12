@@ -16,7 +16,7 @@
 body { margin:0; padding:0; }
 #map {
   position: absolute;
-  top: 12em;
+  top: 14em;
   left: 0.5em;
   height: 400px;
   width: 300px;
@@ -46,6 +46,18 @@ button.local {
   font-size: 1em;
   width: 100%;
 }
+#download {
+  display: block;
+  text-align:center;
+  background: #dddddd;
+  padding 0 0.5em 0 0.5em;
+  border: solid 2px #ddd;
+  border-radius: 3px;
+  margin: 0px 0px 5px 0px;
+  line-height: 1.5em;
+  font-size: 1em;
+  width: 100%;
+}
 
 </style>
 </head>
@@ -55,8 +67,9 @@ button.local {
 <div id='map'></div>
 <div id='menu'>
   <button type="button" class="local" name="colchange" onclick="action()" >3D</button>
-  <button type="button" class="local" name="colchange" onclick="addTerrain()" >地形表示</button>
-  <button type="button" class="local" name="colchange" onclick="addTileboundary()" >タイル図郭</button>
+  <button type="button" class="local" name="colchange" onclick="addTerrain()" >地形を表示</button>
+  <button type="button" class="local" name="colchange" onclick="addTileboundary()" >タイル図郭を表示</button>
+  <div><a id="download">取得データのダウンロード</a></div>
   <div id="message"></div>
 </div>
 <script>
@@ -141,6 +154,17 @@ var action = function(){
 //    var waterarea = getGeojson("Polygon", "waterarea", "gsibv-vectortile-source-1-4-16").geojson;
     
     
+    //ダウンロード準備
+    var resutls_obj = {
+      "contour": contour,
+      "road": road,
+      "railway": railway,
+      "building": building
+    };
+    var results_string = JSON.stringify(resutls_obj, null, 4);
+    setdownload(results_string, "output.json", 'download'); //ダウンロード準備
+    
+    
     //道路データの加工
     for(i in road){
 
@@ -205,56 +229,6 @@ var action = function(){
         
     }
     
-    //FillExtrusion利用--------------------------------------------------
-    //建物
-    if(building){
-      if(map.getLayer('building-fillextrusion')){
-          map.removeLayer('building-fillextrusion');
-      }
-      map.getSource('building3d').setData(
-          building
-      );
-      map.addLayer({
-          id: 'building-fillextrusion',
-          type: 'fill-extrusion',
-          source: 'building3d',
-          paint: {
-            'fill-extrusion-color': 'rgb(225, 200, 200)',
-            "fill-extrusion-height": ["get", "height"],
-            "fill-extrusion-base": ["get", "baseHeight"]
-          },
-          layout: {
-          }
-      });
-    }
-    
-    /*
-    console.log(waterarea);
-    
-    //水域
-    if(waterarea){
-      if(map.getLayer('waterarea-fillextrusion')){
-          map.removeLayer('waterarea-fillextrusion');
-      }
-      map.getSource('waterarea3d').setData(
-          waterarea
-      );
-      map.addLayer({
-          id: 'waterarea-fillextrusion',
-          type: 'fill-extrusion',
-          source: 'waterarea3d',
-          paint: {
-            'fill-extrusion-color': 'rgb(190,210,255)',
-            "fill-extrusion-height": ["get", "alti"],
-            "fill-extrusion-base": ["-", ["get", "alti"], 1]
-          },
-          layout: {
-          }
-      });
-    }
-    */
-    
-
     //Custom(DeckGL)利用--------------------------------------------------
     //道路
     if(map.getLayer('path-layer-road')){
@@ -317,6 +291,55 @@ var action = function(){
     map.addLayer(myContourDeckLayer);
     
     
+    //FillExtrusion利用--------------------------------------------------
+    //建物
+    if(building){
+      if(map.getLayer('building-fillextrusion')){
+          map.removeLayer('building-fillextrusion');
+      }
+      map.getSource('building3d').setData(
+          building
+      );
+      map.addLayer({
+          id: 'building-fillextrusion',
+          type: 'fill-extrusion',
+          source: 'building3d',
+          paint: {
+            'fill-extrusion-color': 'rgb(225, 200, 200)',
+            "fill-extrusion-height": ["get", "height"],
+            "fill-extrusion-base": ["get", "baseHeight"]
+          },
+          layout: {
+          }
+      });
+    }
+    
+    /*
+    console.log(waterarea);
+    
+    //水域
+    if(waterarea){
+      if(map.getLayer('waterarea-fillextrusion')){
+          map.removeLayer('waterarea-fillextrusion');
+      }
+      map.getSource('waterarea3d').setData(
+          waterarea
+      );
+      map.addLayer({
+          id: 'waterarea-fillextrusion',
+          type: 'fill-extrusion',
+          source: 'waterarea3d',
+          paint: {
+            'fill-extrusion-color': 'rgb(190,210,255)',
+            "fill-extrusion-height": ["get", "alti"],
+            "fill-extrusion-base": ["-", ["get", "alti"], 1]
+          },
+          layout: {
+          }
+      });
+    }
+    */
+    
 }
 
 
@@ -362,6 +385,18 @@ var addTerrain = function(){
     }
     
     isTerrainShow = !isTerrainShow;
+}
+
+/*************************************************/
+/*ダウンロードの処理                               */
+/*************************************************/
+
+var setdownload = function(string, filename, container){
+      var blob = new Blob([string], {type: 'text\/plain'});
+      var url = URL.createObjectURL(blob);
+      const a = document.getElementById(container);
+      a.href = window.URL.createObjectURL(blob);
+      a.download = filename;
 }
 
 
