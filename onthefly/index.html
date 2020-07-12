@@ -84,7 +84,7 @@ var map = new mapboxgl.Map({
   center: [139.78148, 35.768793], // starting position [lng, lat]
   zoom: 9, // starting zoom
   minZoom: 6,
-  maxZoom: 17.99,
+  maxZoom: 15.99,
   localIdeographFontFamily: ['MS Gothic', 'Hiragino Kaku Gothic Pro', 'sans-serif']
 });
 
@@ -175,13 +175,17 @@ var action = function(){
           roadOpacity = 100;
         }
         
+        var adjust = 5;
         var color = [255,255,255,roadOpacity];
         if(f.properties["motorway"] == 1){
           color = [100,195,115,roadOpacity];
+          adjust = adjust + 0.3;
         }else if (f.properties["rdCtg"] == 0 || f.properties["rdCtg"] == 3){
           color = [235,130,120,roadOpacity];
+          adjust = adjust + 0.2;
         }else if (f.properties["rdCtg"] == 1){
           color = [255,255,100,roadOpacity];
+          adjust = adjust + 0.1;
         }
         
         var width = 2;
@@ -194,7 +198,7 @@ var action = function(){
         road[i].properties["width"] = width;
         
         for(j in road[i].path){
-          road[i].path[j][2] = road[i].path[j][2] + 5; //見た目の関係で少し高くする。
+          road[i].path[j][2] = road[i].path[j][2] + adjust; //見た目の関係で少し高くする。
         }
         
     }
@@ -203,7 +207,7 @@ var action = function(){
     for(i in railway){
         
         for(j in railway[i].path){
-          railway[i].path[j][2] = railway[i].path[j][2] + 5; //見た目の関係で少し高くする。
+          railway[i].path[j][2] = railway[i].path[j][2] + 5.3; //見た目の関係で少し高くする。
         }
         
     }
@@ -215,17 +219,24 @@ var action = function(){
         
         var height = f.properties["alti"];
         
+        var color = 'hsl(0, 50%, 80%)';
+        var opacity = 1;
+        
         var ftCode = f.properties["ftCode"];
         if(ftCode == 3101 || ftCode == 3111 || ftCode == 4302){
           height = height + 10;
+          color = (ftCode == 3111) ? 'hsl(0, 100%, 95%)' : color;
         }else if(ftCode == 3102 || ftCode == 3112){
           height = height + 40;
+          color = (ftCode == 3112) ? 'hsl(30, 100%, 95%)' : 'hsl(30, 100%, 80%)';
         }else if(ftCode == 3103 || ftCode == 4301){
           height = height + 100;
+          color = 'hsl(210, 100%, 90%)';
         }
         
         building.features[i].properties["height"] = height;
         building.features[i].properties["baseHeight"] = f.properties["alti"];
+        building.features[i].properties["color"] = color;
         
     }
     
@@ -305,7 +316,7 @@ var action = function(){
           type: 'fill-extrusion',
           source: 'building3d',
           paint: {
-            'fill-extrusion-color': 'rgb(225, 200, 200)',
+            "fill-extrusion-color": ["get", "color"],
             "fill-extrusion-height": ["get", "height"],
             "fill-extrusion-base": ["get", "baseHeight"]
           },
