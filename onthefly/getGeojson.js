@@ -14,7 +14,8 @@ var getGeojson = function(geomtype, source_layer, source){
     var pow2_24 = Math.pow(2, 24);
     
     var contour = map.querySourceFeatures(source, {
-        sourceLayer: "contour"
+        sourceLayer: "contour",
+        filter: ["in", ["get", "ftCode"], ["literal", [7351, 7352, 7353]] ] //等深線を除く
     });
    
     if(source_layer == "contour"){
@@ -27,24 +28,49 @@ var getGeojson = function(geomtype, source_layer, source){
             
             var f = features[j];
             
+            /*
             if(f.geometry.type != "LineString"){
                 continue;
             }
+            */
             
             var g = [];
             
-            for(k in f.geometry.coordinates){
-                var lon = f.geometry.coordinates[k][0];
-                var lat = f.geometry.coordinates[k][1];
-                g.push([f.geometry.coordinates[k][0], f.geometry.coordinates[k][1], f.properties["alti"]]);
+            if(f.geometry.type == "LineString"){
+            
+            //LineStirngの場合
+              for(k in f.geometry.coordinates){
+                  var lon = f.geometry.coordinates[k][0];
+                  var lat = f.geometry.coordinates[k][1];
+                  g.push([f.geometry.coordinates[k][0], f.geometry.coordinates[k][1], f.properties["alti"]]);
+              }
+              
+              feature3d.push({
+                "path": g,
+                "sourceLayer": "contour",
+                "properties": f.properties
+              });
+              
+            }else if(f.geometry.type == "MultiLineString"){
+            
+            //MultiLineStringの場合
+              for(l in f.geometry.coordinates){
+                for(k in f.geometry.coordinates[l]){
+                    var lon = f.geometry.coordinates[l][k][0];
+                    var lat = f.geometry.coordinates[l][k][1];
+                    g.push([f.geometry.coordinates[l][k][0], f.geometry.coordinates[l][k][1], f.properties["alti"]]);
+                }
+                
+                feature3d.push({
+                  "path": g,
+                  "sourceLayer": "contour",
+                  "properties": f.properties
+                });
+              }
+              
+            }else{
+              continue;
             }
-            
-            
-            feature3d.push({
-              "path": g,
-              "sourceLayer": "contour",
-              "properties": f.properties
-            });
         }
         
         all_features = all_features.concat(features);
@@ -101,30 +127,62 @@ var getGeojson = function(geomtype, source_layer, source){
             
             var f = features[j];
             
-            if(f.geometry.type != "LineString" || !f.geometry.coordinates){
+            /*
+            if(f.geometry.type != "LineString" && f.geometry.type != "MultiLineString"){
                 continue;
             }
-            
+            */
             var g = [];
             
-            for(k in f.geometry.coordinates){
+            
+            if(f.geometry.type == "LineString"){
+            
+            //LineStirngの場合
+              for(k in f.geometry.coordinates){
+                  
+                  var lon = f.geometry.coordinates[k][0];
+                  var lat = f.geometry.coordinates[k][1];
+                  
+                  var targetPoint = turf.point([f.geometry.coordinates[k][0], f.geometry.coordinates[k][1]]);
+                  var nearestPoint = turf.nearestPoint(targetPoint, contourPoints);
+                  
+                  g.push([f.geometry.coordinates[k][0], f.geometry.coordinates[k][1], nearestPoint.properties["alti"]]);
+                  
+              }
+              
+              feature3d.push({
+                "path": g,
+                "sourceLayer": source_layer,
+                "properties": f.properties
+              });
+            }else if(f.geometry.type == "MultiLineString"){
+            
+            //MultiLineStirngの場合
+              
+              console.log(f);
+              for(l in f.geometry.coordinates){
+                for(k in f.geometry.coordinates[l]){
+                    
+                    var lon = f.geometry.coordinates[l][k][0];
+                    var lat = f.geometry.coordinates[l][k][1];
+                    
+                    var targetPoint = turf.point([f.geometry.coordinates[l][k][0], f.geometry.coordinates[l][k][1]]);
+                    var nearestPoint = turf.nearestPoint(targetPoint, contourPoints);
+                    
+                    g.push([f.geometry.coordinates[l][k][0], f.geometry.coordinates[l][k][1], nearestPoint.properties["alti"]]);
+                    
+                }
                 
-                var lon = f.geometry.coordinates[k][0];
-                var lat = f.geometry.coordinates[k][1];
+                feature3d.push({
+                  "path": g,
+                  "sourceLayer": source_layer,
+                  "properties": f.properties
+                });
                 
-                var targetPoint = turf.point([f.geometry.coordinates[k][0], f.geometry.coordinates[k][1]]);
-                var nearestPoint = turf.nearestPoint(targetPoint, contourPoints);
-                
-                g.push([f.geometry.coordinates[k][0], f.geometry.coordinates[k][1], nearestPoint.properties["alti"]]);
-                
+              }
+            }else{
+              continue;
             }
-            
-            feature3d.push({
-              "path": g,
-              "sourceLayer": source_layer,
-              "properties": f.properties
-            });
-            
         }
         
         all_features = all_features.concat(features);

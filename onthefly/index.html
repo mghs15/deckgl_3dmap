@@ -16,7 +16,7 @@
 body { margin:0; padding:0; }
 #map {
   position: absolute;
-  top: 10em;
+  top: 12em;
   left: 0.5em;
   height: 400px;
   width: 300px;
@@ -56,6 +56,7 @@ button.local {
 <div id='menu'>
   <button type="button" class="local" name="colchange" onclick="action()" >3D</button>
   <button type="button" class="local" name="colchange" onclick="addTerrain()" >地形表示</button>
+  <div id="message"></div>
 </div>
 <script>
 
@@ -85,6 +86,7 @@ map.addControl(new mapboxgl.ScaleControl() );
 /*データ取得 関係設定                            */
 /*************************************************/
 
+//GeoJSONとして追加するレイヤ用にSourceを用意
 map.on('load', function(){
   map.addSource('building3d', {
       type: 'geojson',
@@ -103,14 +105,33 @@ map.on('load', function(){
   });
 });
 
-
+//ボタンクリック時の処理
 var action = function(){
     
+    
+    //エラー処理
+    var styleLoadStatus = map.isStyleLoaded();
+    if(!styleLoadStatus){
+      alert("まだ、スタイルが読み込めていません。");
+    }
+    
+//    var tmpzl = map.getZoom();
+    
     //データの読み込みと加工
+    console.log("等高線データを取得中...");
     var contour = getGeojson("LineString", "contour", "gsibv-vectortile-source-1-4-16").contents3d;
+    if(contour.length == 0){
+      alert("データ取得範囲に等高線データがありませんでした。");
+      document.getElementById("message").innerText = "";
+      return;
+    }
+    console.log("道路データを取得中...");
     var road = getGeojson("LineString", "road", "gsibv-vectortile-source-1-4-16").contents3d;
+    console.log("鉄道データを取得中...");
     var railway = getGeojson("LineString", "railway", "gsibv-vectortile-source-1-4-16").contents3d;
+    console.log("建物データを取得中...");
     var building = getGeojson("Polygon", "building", "gsibv-vectortile-source-1-4-16").geojson;
+    
 //    var waterarea = getGeojson("Polygon", "waterarea", "gsibv-vectortile-source-1-4-16").geojson;
     
     
@@ -134,6 +155,7 @@ var action = function(){
         }
         
         var width = 1;
+        
         if(f.properties["rnkWidth"] < 5){
           width = 1 + f.properties["rnkWidth"];
         }
@@ -143,6 +165,15 @@ var action = function(){
         
         for(j in road[i].path){
           road[i].path[j][2] = road[i].path[j][2] + 5; //見た目の関係で少し高くする。
+        }
+        
+    }
+    
+    //鉄道データの加工
+    for(i in railway){
+        
+        for(j in railway[i].path){
+          railway[i].path[j][2] = railway[i].path[j][2] + 5; //見た目の関係で少し高くする。
         }
         
     }
@@ -182,7 +213,7 @@ var action = function(){
           type: 'fill-extrusion',
           source: 'building3d',
           paint: {
-            'fill-extrusion-color': 'rgb(255, 200, 200)',
+            'fill-extrusion-color': 'rgb(200, 200, 200)',
             "fill-extrusion-height": ["get", "height"],
             "fill-extrusion-base": ["get", "baseHeight"]
           },
@@ -229,7 +260,7 @@ var action = function(){
       data: road,
       pickable: true,
       widthScale: 3,
-//      widthMinPixels: 2,
+      widthMinPixels: 1,
       getPath: d => d.path,
       getColor: d => d.properties["color"],
       getWidth: d => d.properties["width"]
@@ -277,18 +308,29 @@ var action = function(){
     /*Path Layer*/
     map.addLayer(myRoadDeckLayer);
     map.addLayer(myRailwayDeckLayer);
+    map.addLayer(myContourDeckLayer);
     
     
-    if(map.getZoom() >= 14){
-      map.addLayer(myContourDeckLayer);
-    }
 }
+
 
 //地形データ
 var isTerrainShow = false;
 
 var addTerrain = function(){
     if(!isTerrainShow){
+      
+      //エラー処理
+      var styleLoadStatus = map.isStyleLoaded();
+      if(!styleLoadStatus){
+        alert("まだ、スタイルが読み込めていません。");
+      }
+      
+      if(map.getZoom() > 14.5){
+        alert("地形表示はZL14.5未満でできます。");
+        return;
+      }
+    
       //地形
       if(map.getLayer('terrain-layer')){
         map.removeLayer('terrain-layer');
@@ -303,6 +345,7 @@ var addTerrain = function(){
           offset: 0
         },
         elevationData: 'https://cyberjapandata.gsi.go.jp/xyz/dem_png/{z}/{x}/{y}.png',
+        texture: 'https://cyberjapandata.gsi.go.jp/xyz/seamlessphoto/{z}/{x}/{y}.jpg',
         color: [100,155,100]
       });    
       map.addLayer(myTerrainDeckLayer);
@@ -314,8 +357,6 @@ var addTerrain = function(){
     
     isTerrainShow = !isTerrainShow;
 }
-
-
 
 
 </script>
