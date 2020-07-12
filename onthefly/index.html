@@ -56,6 +56,7 @@ button.local {
 <div id='menu'>
   <button type="button" class="local" name="colchange" onclick="action()" >3D</button>
   <button type="button" class="local" name="colchange" onclick="addTerrain()" >地形表示</button>
+  <button type="button" class="local" name="colchange" onclick="addTileboundary()" >タイル図郭</button>
   <div id="message"></div>
 </div>
 <script>
@@ -78,6 +79,11 @@ var map = new mapboxgl.Map({
 map.addControl(new mapboxgl.NavigationControl(), 'bottom-right');
 map.addControl(new mapboxgl.ScaleControl() );
 
+map.showTileBoundaries = true;
+
+var addTileboundary = function(){
+  map.showTileBoundaries = !map.showTileBoundaries;
+}
 
 /*************************************************/
 /*DeckGL 関係設定                                */
@@ -154,10 +160,10 @@ var action = function(){
           color = [255,255,100,roadOpacity];
         }
         
-        var width = 1;
+        var width = 2;
         
         if(f.properties["rnkWidth"] < 5){
-          width = 1 + f.properties["rnkWidth"];
+          width = width + f.properties["rnkWidth"];
         }
         
         road[i].properties["color"] = color;
@@ -213,7 +219,7 @@ var action = function(){
           type: 'fill-extrusion',
           source: 'building3d',
           paint: {
-            'fill-extrusion-color': 'rgb(200, 200, 200)',
+            'fill-extrusion-color': 'rgb(225, 200, 200)',
             "fill-extrusion-height": ["get", "height"],
             "fill-extrusion-base": ["get", "baseHeight"]
           },

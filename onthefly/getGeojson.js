@@ -159,7 +159,6 @@ var getGeojson = function(geomtype, source_layer, source){
             
             //MultiLineStirngの場合
               
-              console.log(f);
               for(l in f.geometry.coordinates){
                 for(k in f.geometry.coordinates[l]){
                     
