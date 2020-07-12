@@ -16,10 +16,10 @@
 body { margin:0; padding:0; }
 #map {
   position: absolute;
-  top: 0;
-  left: 0;
-  height: 100%;
-  width: 100%;
+  top: 14em;
+  left: 0.5em;
+  height: 400px;
+  width: 300px;
 }
 #menu {
     position: absolute;
@@ -32,7 +32,7 @@ body { margin:0; padding:0; }
     border: dashed 3px #dddddd;
     font-family: 'Open Sans', sans-serif;
     width: 90%;
-    max-width: 250px;
+    max-width: 280px;
 }
 button.local {
   display: block;
@@ -105,38 +105,6 @@ var addTileboundary = function(){
 /*データ取得 関係設定                            */
 /*************************************************/
 
-//表示範囲をタイル枚数に換算
-
-var long2tile = function(lon,zoom) { return (Math.floor((lon+180)/360*Math.pow(2,zoom))); }
-
-var lat2tile = function(lat,zoom)  { return (Math.floor((1-Math.log(Math.tan(lat*Math.PI/180) + 1/Math.cos(lat*Math.PI/180))/Math.PI)/2 *Math.pow(2,zoom))); }
-
-var checkLoadTiles = function(){
-
-  var zoom = Math.floor(map.getZoom());
-  var bounds = map.getBounds();
-  
-  var ne_lat = bounds._ne.lat;
-  var ne_lon = bounds._ne.lng;
-  var sw_lat = bounds._sw.lat;
-  var sw_lon = bounds._sw.lng;
-  
-  var tileX1 = long2tile(ne_lon,zoom);
-  var tileX2 = long2tile(sw_lon,zoom);
-  
-  var tileY1 = lat2tile(ne_lat,zoom);
-  var tileY2 = lat2tile(sw_lat,zoom);
-  
-  var X = 1 + tileX1 - tileX2;
-  var Y = 1 + tileY2 - tileY1;
-  
-  var tileCount = X * Y;
-  
-  return tileCount;
-}
-
-var bounds = map.getBounds();
-
 //GeoJSONとして追加するレイヤ用にSourceを用意
 map.on('load', function(){
   map.addSource('building3d', {
@@ -159,21 +127,12 @@ map.on('load', function(){
 //ボタンクリック時の処理
 var action = function(){
     
+    
     //エラー処理
     var styleLoadStatus = map.isStyleLoaded();
     if(!styleLoadStatus){
       alert("まだ、スタイルが読み込めていません。");
-      return;
     }
-    
-    
-    var tileCount = checkLoadTiles();
-    console.log(tileCount);
-    if(tileCount > 5){
-      alert("表示範囲が広すぎます。");
-      return;
-    }
-    
     
 //    var tmpzl = map.getZoom();
     
