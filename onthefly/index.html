@@ -165,16 +165,17 @@ var action = function(){
       return;
     }
     
-    
+    var tmpzl = map.getZoom();
     var tileCount = checkLoadTiles();
     console.log(tileCount);
-    if(tileCount > 5){
+    if(tileCount > 4){
+      alert("表示範囲が広すぎます。");
+      return;
+    }else if(tileCount > 2 && tmpzl < 15){
       alert("表示範囲が広すぎます。");
       return;
     }
     
-    
-//    var tmpzl = map.getZoom();
     
     //データの読み込みと加工
     console.log("等高線データを取得中...");
